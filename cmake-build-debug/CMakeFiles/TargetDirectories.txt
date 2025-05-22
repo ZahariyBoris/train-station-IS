@@ -1,0 +1,3 @@
+C:/Users/zahar/CLionProjects/Kursova/cmake-build-debug/CMakeFiles/Kursova.dir
+C:/Users/zahar/CLionProjects/Kursova/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/zahar/CLionProjects/Kursova/cmake-build-debug/CMakeFiles/rebuild_cache.dir

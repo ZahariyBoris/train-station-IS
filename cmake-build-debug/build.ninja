@@ -55,11 +55,11 @@ build CMakeFiles/Kursova.dir/main.cpp.obj: CXX_COMPILER__Kursova_unscanned_Debug
   OBJECT_DIR = CMakeFiles\Kursova.dir
   OBJECT_FILE_DIR = CMakeFiles\Kursova.dir
 
-build CMakeFiles/Kursova.dir/sqlite3.c.obj: C_COMPILER__Kursova_unscanned_Debug C$:/Users/zahar/CLionProjects/Kursova/sqlite3.c || cmake_object_order_depends_target_Kursova
-  DEP_FILE = CMakeFiles\Kursova.dir\sqlite3.c.obj.d
+build CMakeFiles/Kursova.dir/include/sqlite3.c.obj: C_COMPILER__Kursova_unscanned_Debug C$:/Users/zahar/CLionProjects/Kursova/include/sqlite3.c || cmake_object_order_depends_target_Kursova
+  DEP_FILE = CMakeFiles\Kursova.dir\include\sqlite3.c.obj.d
   FLAGS = -g -fdiagnostics-color=always
   OBJECT_DIR = CMakeFiles\Kursova.dir
-  OBJECT_FILE_DIR = CMakeFiles\Kursova.dir
+  OBJECT_FILE_DIR = CMakeFiles\Kursova.dir\include
 
 
 # =============================================================================
@@ -69,7 +69,7 @@ build CMakeFiles/Kursova.dir/sqlite3.c.obj: C_COMPILER__Kursova_unscanned_Debug 
 #############################################
 # Link the executable Kursova.exe
 
-build Kursova.exe: CXX_EXECUTABLE_LINKER__Kursova_Debug CMakeFiles/Kursova.dir/main.cpp.obj CMakeFiles/Kursova.dir/sqlite3.c.obj
+build Kursova.exe: CXX_EXECUTABLE_LINKER__Kursova_Debug CMakeFiles/Kursova.dir/main.cpp.obj CMakeFiles/Kursova.dir/include/sqlite3.c.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\Kursova.dir

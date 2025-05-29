@@ -7,4 +7,5 @@ add_executable (
         Kursova main.cpp
         include/sqlite3.c
         include/classes.h
+        include/functions.h
 )

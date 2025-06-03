@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <windows.h>
+#include <ctime>
 #include <thread>
 
 void enableANSI() {
@@ -24,6 +25,13 @@ void clearScreen() {
 void sleepAndClear(int val) {
     std::this_thread::sleep_for(std::chrono::milliseconds(val));
     clearScreen();
+}
+
+std::string getCurrentDateTime() {
+    std::time_t t = std::time(nullptr);
+    char buf[20];
+    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+    return std::string(buf);
 }
 
 #endif //FUNCTIONS_H

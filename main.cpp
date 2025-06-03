@@ -6,23 +6,6 @@
 #include "include/classes.h"
 #include "include/functions.h"
 
-/******************************************************************************
- *                                                                            *
- *                         ГОЛОВНИЙ ФУНКЦІОНАЛ ПРОГРАМИ                       *
- *                                                                            *
- *   У цьому файлі реалізовано основну логіку моєї програми.                  *
- *                                                                            *
- *   Використані технології:                                                  *
- *     - C++20                                                                *
- *     - SQLite3                                                              *
- *     - CMake (генератор збірок)                                             *
- *     - SQLiteStudio (перегляд таблиць)                                      *
- *     - JetBrains CLion 2025.1 (середовище розробки)                         *
- *                                                                            *
- *   P.S. Програма на стадії розробки!                                        *
- *                                                                            *
- ******************************************************************************/
-
 int main() {
     enableANSI();
 
@@ -34,7 +17,6 @@ int main() {
     }
     // manager.dropTables(db);
     manager.createTables(db);
-
     sleepAndClear(999);
 
     char choice;
@@ -65,22 +47,7 @@ int main() {
                         std::cin >> adminChoice;
 
                         switch (adminChoice) {
-                        case '1': {
-                            clearScreen();
-                            std::string name, surname, passport_id, phone_num;
-                            std::cout << "Enter passenger's name: ";
-                            std::cin >> name;
-                            std::cout << "Enter passenger's surname: ";
-                            std::cin >> surname;
-                            std::cout << "Enter passenger's passport ID: ";
-                            std::cin >> passport_id;
-                            std::cout << "Enter passenger's phone number: ";
-                            std::cin >> phone_num;
-                            manager.addPassenger(db, name, surname, phone_num, passport_id);
-                            break;
-                        }
-
-                        case '2': {
+                            case '1': {
                             clearScreen();
                             std::string name;
                             std::cout << "Enter city name: ";
@@ -89,7 +56,7 @@ int main() {
                             break;
                         }
 
-                        case '3': {
+                        case '2': {
                             clearScreen();
                             std::string name;
                             int city_id;
@@ -99,6 +66,60 @@ int main() {
                             std::cout << "Enter city ID: ";
                             std::cin >> city_id;
                             manager.addStation(db, name, city_id);
+                            break;
+                        }
+
+                        case '3': {
+                            clearScreen();
+                            std::string name;
+                            int station_id;
+                            std::cout << "Enter platform name: ";
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            std::getline(std::cin, name);
+                            std::cout << "Enter station ID: ";
+                            std::cin >> station_id;
+                            manager.addPlatform(db, name, station_id);
+                            break;
+                        }
+
+                        case '4': {
+                            clearScreen();
+                            std::string departure_time, arrival_time;
+                            int departure_station_id, arrival_station_id, platform_id;
+                            std::cout << "Enter departure time: ";
+                            std::cin >> departure_time;
+                            std::cout << "Enter arrival time: ";
+                            std::cin >> arrival_time;
+                            std::cout << "Enter departure station ID: ";
+                            std::cin >> departure_station_id;
+                            std::cout << "Enter arrival station ID: ";
+                            std::cin >> arrival_station_id;
+                            std::cout << "Enter platform ID: ";
+                            std::cin >> platform_id;
+                            manager.addRoute(db, departure_time, arrival_time, departure_station_id, arrival_station_id, platform_id);
+                            break;
+                        }
+
+                        case '5': {
+                            clearScreen();
+                            std::string model;
+                            int route_id;
+                            std::cout << "Enter model name: ";
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            std::getline(std::cin, model);
+                            std::cout << "Enter route ID: ";
+                            std::cin >> route_id;
+                            manager.addTrain(db, model, route_id);
+                            break;
+                        }
+
+                        case '6': {
+                            int train_id, seat_count;
+                            std::cout << "Enter train ID: ";
+                            std::cin >> train_id;
+                            std::cout << "Enter seat count: ";
+                            std::cin >> seat_count;
+                            manager.addCarriage(db, train_id, seat_count);
                             break;
                         }
 
@@ -135,6 +156,25 @@ int main() {
                             break;
                         }
 
+                        case '2': {
+                            clearScreen();
+                            int p_id, tr_id, carriage_id, seat;
+                            double price;
+                            std::string date = getCurrentDateTime();
+
+                            std::cout << "Enter passenger's ID: ";
+                            std::cin >> p_id;
+                            std::cout << "Enter train ID: ";
+                            std::cin >> tr_id;
+                            std::cout << "Enter carriage ID: ";
+                            std::cin >> carriage_id;
+                            std::cout << "Enter seat ID: ";
+                            std::cin >> seat;
+                            std::cout << "Enter ticket price: ";
+                            manager.purchaseTicket(db, p_id, tr_id, carriage_id, seat, price, date);
+                            break;
+                        }
+
                         case 'q':
                             inCashierMenu = false;
                             break;
@@ -145,7 +185,6 @@ int main() {
                         }
                     }
                 }
-
             }
             else {
                 std::cout << "Login failed! Try again!" << std::endl;

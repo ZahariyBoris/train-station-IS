@@ -18,12 +18,12 @@ public:
     void drawAdminMenu() {
         std::cout << "--------------------------" << std::endl;
         std::cout << "Choose action:" << std::endl;
-        std::cout << "1 - Add passenger;" << std::endl;
-        std::cout << "2 - Add city;" << std::endl;
-        std::cout << "3 - Add station;" << std::endl;
-        std::cout << "4 - " << std::endl;
-        std::cout << "5 - " << std::endl;
-        std::cout << "6 - " << std::endl;
+        std::cout << "1 - Add city;" << std::endl;
+        std::cout << "2 - Add station;" << std::endl;
+        std::cout << "3 - Add platform;" << std::endl;
+        std::cout << "4 - Add route;" << std::endl;
+        std::cout << "5 - Add train" << std::endl;
+        std::cout << "6 - Add carriage" << std::endl;
         std::cout << "q - " << std::endl;
         std::cout << "--------------------------" << std::endl;
         std::cout << "Enter your choice from the menu: ";
@@ -33,7 +33,7 @@ public:
         std::cout << "--------------------------" << std::endl;
         std::cout << "Choose action:" << std::endl;
         std::cout << "1 - Add passenger;" << std::endl;
-        std::cout << "2 - " << std::endl;
+        std::cout << "2 - Buy ticket;" << std::endl;
         std::cout << "3 - " << std::endl;
         std::cout << "4 - " << std::endl;
         std::cout << "q - " << std::endl;
@@ -129,7 +129,8 @@ public:
         if (rc != SQLITE_OK) {
             std::cerr << "Table creation error: " << errMsg << std::endl;
             sqlite3_free(errMsg);
-        } else {
+        }
+        else {
             std::cout << "All tables created successfully.\n";
         }
     }
@@ -150,7 +151,8 @@ public:
         if (rc != SQLITE_OK) {
             std::cerr << "Error dropping tables: " << errMsg << std::endl;
             sqlite3_free(errMsg);
-        } else {
+        }
+        else {
             std::cout << "All tables dropped successfully.\n";
         }
     }
@@ -201,7 +203,8 @@ public:
             int errCode = sqlite3_errcode(db);
             if (errCode == SQLITE_CONSTRAINT) {
                 std::cerr << "Passenger with this passport ID already exists." << std::endl;
-            } else {
+            }
+            else {
                 std::cerr << "Error inserting passenger: " << sqlite3_errmsg(db) << std::endl;
             }
         }
@@ -256,13 +259,153 @@ public:
         if (sqlite3_step(stmt) == SQLITE_DONE) {
             std::cout << "Station added successfully!" << std::endl;
             success = true;
-        } else {
+        }
+        else {
             int errCode = sqlite3_errcode(db);
             if (errCode == SQLITE_CONSTRAINT) {
                 std::cerr << "Station already exists or city_id invalid." << std::endl;
-            } else {
+            }
+            else {
                 std::cerr << "Error inserting station: " << sqlite3_errmsg(db) << std::endl;
             }
+        }
+
+        sqlite3_finalize(stmt);
+        return success;
+    }
+
+    bool purchaseTicket(sqlite3* db, int passenger_id, int train_id, int carriage_id, int seat_number, double price, const std::string& purchase_date) {
+        const char* sql = "INSERT INTO tickets (passenger_id, train_id, carriage_id, seat_number, price, purchase_date) VALUES (?, ?, ?, ?, ?, ?);";
+        sqlite3_stmt* stmt;
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+            std::cerr << "Prepare error: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        sqlite3_bind_int(stmt, 1, passenger_id);
+        sqlite3_bind_int(stmt, 2, train_id);
+        sqlite3_bind_int(stmt, 3, carriage_id);
+        sqlite3_bind_int(stmt, 4, seat_number);
+        sqlite3_bind_double(stmt, 5, price);
+        sqlite3_bind_text(stmt, 6, purchase_date.c_str(), -1, SQLITE_TRANSIENT);
+
+        bool success = false;
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            std::cout << "Ticket purchased!" << std::endl;
+            success = true;
+        }
+        else {
+            std::cerr << "Purchase error: " << sqlite3_errmsg(db) << std::endl;
+        }
+
+        sqlite3_finalize(stmt);
+        return success;
+    }
+
+    bool addTrain(sqlite3* db, const std::string& model_name, int route_id) {
+        const char* sql = "INSERT INTO trains (model_name, route_id) VALUES (?, ?);";
+        sqlite3_stmt* stmt;
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+            std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, model_name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 2, route_id);
+
+        bool success = false;
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            std::cout << "Train added successfully!" << std::endl;
+            success = true;
+        }
+        else {
+            std::cerr << "Error inserting train: " << sqlite3_errmsg(db) << std::endl;
+        }
+
+        sqlite3_finalize(stmt);
+        return success;
+    }
+
+    bool addPlatform(sqlite3* db, const std::string& name, int station_id) {
+        const char* sql = "INSERT INTO trains (name, station_id) VALUES (?, ?);";
+        sqlite3_stmt* stmt;
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+            std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 2, station_id);
+
+        bool success = false;
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            std::cout << "Platform added successfully!" << std::endl;
+            success = true;
+        }
+        else {
+            std::cerr << "Error inserting platform: " << sqlite3_errmsg(db) << std::endl;
+        }
+
+        sqlite3_finalize(stmt);
+        return success;
+    }
+
+    bool addRoute(sqlite3* db,
+              const std::string& departure_time,
+              const std::string& arrival_time,
+              int departure_station_id,
+              int arrival_station_id,
+              int platform_id) {
+        const char* sql = "INSERT INTO routes (departure_time, arrival_time, departure_station_id, arrival_station_id, platform_id) "
+                          "VALUES (?, ?, ?, ?, ?);";
+        sqlite3_stmt* stmt;
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+            std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, departure_time.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, arrival_time.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 3, departure_station_id);
+        sqlite3_bind_int(stmt, 4, arrival_station_id);
+        sqlite3_bind_int(stmt, 5, platform_id);
+
+        bool success = false;
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            std::cout << "Route added successfully!" << std::endl;
+            success = true;
+        }
+        else {
+            std::cerr << "Error inserting route: " << sqlite3_errmsg(db) << std::endl;
+        }
+
+        sqlite3_finalize(stmt);
+        return success;
+    }
+
+    bool addCarriage(sqlite3* db, int train_id, int seat_count) {
+        const char* sql = "INSERT INTO carriages (train_id, seat_count) VALUES (?, ?);";
+        sqlite3_stmt* stmt;
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+            std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        sqlite3_bind_int(stmt, 1, train_id);
+        sqlite3_bind_int(stmt, 2, seat_count);
+
+        bool success = false;
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            std::cout << "Carriage added successfully!" << std::endl;
+            success = true;
+        }
+        else {
+            std::cerr << "Error inserting carriage: " << sqlite3_errmsg(db) << std::endl;
         }
 
         sqlite3_finalize(stmt);

@@ -152,7 +152,8 @@ int main() {
                             std::cin >> passport_id;
                             std::cout << "Enter passenger's phone number: ";
                             std::cin >> phone_num;
-                            manager.addPassenger(db, name, surname, phone_num, passport_id);
+                            Passenger p(name, surname, phone_num, passport_id);
+                            p.save(db);
                             break;
                         }
 

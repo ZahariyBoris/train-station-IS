@@ -4,15 +4,15 @@
 
 #include "sqlite3.h"
 
-class IntefaceRender {
+class InterfaceRender {
 public:
     void drawLoginMenu() {
         std::cout << "-------------------------" << std::endl;
         std::cout << "| WELCOME TO THE SYSTEM |" << std::endl;
         std::cout << "------------------------- \n"
-                  << "1 - Login \n"
-                  << "q - Exit \n"
-                  << "Enter your choice from the menu: ";
+            << "1 - Login \n"
+            << "q - Exit \n"
+            << "Enter your choice from the menu: ";
     }
 
     void drawAdminMenu() {
@@ -42,7 +42,48 @@ public:
     }
 };
 
-class DatabaseManager : public IntefaceRender {
+class Passenger {
+public:
+    std::string name;
+    std::string surname;
+    std::string phone;
+    std::string passportId;
+
+    Passenger(const std::string& name,
+        const std::string& surname,
+        const std::string& phone,
+        const std::string& passportId)
+        : name(name), surname(surname), phone(phone), passportId(passportId) {
+    }
+
+    bool save(sqlite3* db) const {
+        sqlite3_stmt* stmt = nullptr;
+        const char* sql = "INSERT INTO passengers (name, surname, phone_num, passport_id) VALUES (?, ?, ?, ?);";
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+            std::cerr << "Prepare failed: " << sqlite3_errmsg(db) << "\n";
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, surname.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, phone.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 4, passportId.c_str(), -1, SQLITE_TRANSIENT);
+
+        bool success = sqlite3_step(stmt) == SQLITE_DONE;
+        if (!success) {
+            std::cerr << "Insert failed: " << sqlite3_errmsg(db) << "\n";
+        }
+        else {
+            std::cout << "Passenger saved.\n";
+        }
+
+        sqlite3_finalize(stmt);
+        return success;
+    }
+};
+
+class DatabaseManager : public InterfaceRender {
 public:
     void createTables(sqlite3* db) {
         sqlite3_exec(db, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
@@ -50,78 +91,78 @@ public:
         const char* createTablesSQL =
 
             "CREATE TABLE IF NOT EXISTS roles ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "name TEXT NOT NULL UNIQUE,"
-                "password TEXT NOT NULL"
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "name TEXT NOT NULL UNIQUE,"
+            "password TEXT NOT NULL"
             ");"
 
             "CREATE TABLE IF NOT EXISTS passengers ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "name TEXT NOT NULL,"
-                "surname TEXT NOT NULL,"
-                "email TEXT UNIQUE,"
-                "phone_num TEXT NOT NULL UNIQUE,"
-                "passport_id TEXT NOT NULL UNIQUE"
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "name TEXT NOT NULL,"
+            "surname TEXT NOT NULL,"
+            "email TEXT UNIQUE,"
+            "phone_num TEXT NOT NULL UNIQUE,"
+            "passport_id TEXT NOT NULL UNIQUE"
             ");"
 
             "CREATE TABLE IF NOT EXISTS cities ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "name TEXT NOT NULL UNIQUE"
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "name TEXT NOT NULL UNIQUE"
             ");"
 
             "CREATE TABLE IF NOT EXISTS stations ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "name TEXT NOT NULL,"
-                "city_id INTEGER NOT NULL,"
-                "FOREIGN KEY (city_id) REFERENCES cities(id)"
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "name TEXT NOT NULL,"
+            "city_id INTEGER NOT NULL,"
+            "FOREIGN KEY (city_id) REFERENCES cities(id)"
             ");"
 
             "CREATE TABLE IF NOT EXISTS platforms ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "name TEXT NOT NULL,"
-                "station_id INTEGER NOT NULL,"
-                "description TEXT,"
-                "FOREIGN KEY (station_id) REFERENCES stations(id)"
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "name TEXT NOT NULL,"
+            "station_id INTEGER NOT NULL,"
+            "description TEXT,"
+            "FOREIGN KEY (station_id) REFERENCES stations(id)"
             ");"
 
             "CREATE TABLE IF NOT EXISTS routes ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "departure_time TEXT NOT NULL,"
-                "arrival_time TEXT NOT NULL,"
-                "departure_station_id INTEGER NOT NULL,"
-                "arrival_station_id INTEGER NOT NULL,"
-                "platform_id INTEGER NOT NULL,"
-                "FOREIGN KEY (departure_station_id) REFERENCES stations(id),"
-                "FOREIGN KEY (arrival_station_id) REFERENCES stations(id),"
-                "FOREIGN KEY (platform_id) REFERENCES platforms(id)"
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "departure_time TEXT NOT NULL,"
+            "arrival_time TEXT NOT NULL,"
+            "departure_station_id INTEGER NOT NULL,"
+            "arrival_station_id INTEGER NOT NULL,"
+            "platform_id INTEGER NOT NULL,"
+            "FOREIGN KEY (departure_station_id) REFERENCES stations(id),"
+            "FOREIGN KEY (arrival_station_id) REFERENCES stations(id),"
+            "FOREIGN KEY (platform_id) REFERENCES platforms(id)"
             ");"
 
             "CREATE TABLE IF NOT EXISTS trains ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "model_name TEXT NOT NULL UNIQUE,"
-                "route_id INTEGER NOT NULL,"
-                "FOREIGN KEY (route_id) REFERENCES routes(id)"
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "model_name TEXT NOT NULL UNIQUE,"
+            "route_id INTEGER NOT NULL,"
+            "FOREIGN KEY (route_id) REFERENCES routes(id)"
             ");"
 
             "CREATE TABLE IF NOT EXISTS carriages ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "train_id INTEGER NOT NULL,"
-                "seats_count INTEGER NOT NULL,"
-                "FOREIGN KEY (train_id) REFERENCES trains(id) ON DELETE CASCADE"
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "train_id INTEGER NOT NULL,"
+            "seats_count INTEGER NOT NULL,"
+            "FOREIGN KEY (train_id) REFERENCES trains(id) ON DELETE CASCADE"
             ");"
 
             "CREATE TABLE IF NOT EXISTS tickets ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "passenger_id INTEGER NOT NULL,"
-                "train_id INTEGER NOT NULL,"
-                "carriage_id INTEGER NOT NULL,"
-                "seat_number INTEGER NOT NULL,"
-                "price REAL NOT NULL,"
-                "purchase_date TEXT NOT NULL,"
-                "FOREIGN KEY (passenger_id) REFERENCES passengers(id) ON DELETE CASCADE,"
-                "FOREIGN KEY (train_id) REFERENCES trains(id),"
-                "FOREIGN KEY (carriage_id) REFERENCES carriages(id),"
-                "UNIQUE (carriage_id, seat_number)"
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "passenger_id INTEGER NOT NULL,"
+            "train_id INTEGER NOT NULL,"
+            "carriage_id INTEGER NOT NULL,"
+            "seat_number INTEGER NOT NULL,"
+            "price REAL NOT NULL,"
+            "purchase_date TEXT NOT NULL,"
+            "FOREIGN KEY (passenger_id) REFERENCES passengers(id) ON DELETE CASCADE,"
+            "FOREIGN KEY (train_id) REFERENCES trains(id),"
+            "FOREIGN KEY (carriage_id) REFERENCES carriages(id),"
+            "UNIQUE (carriage_id, seat_number)"
             ");";
 
         char* errMsg = nullptr;
@@ -177,40 +218,6 @@ public:
 
         sqlite3_finalize(stmt);
         return authenticated;
-    }
-
-    bool addPassenger(sqlite3* db, const std::string& name, const std::string& surname, const std::string& phone_num,
-                  const std::string& passport_id) {
-        const char* sql = "INSERT INTO passengers (name, surname, phone_num, passport_id) VALUES (?, ?, ?, ?);";
-        sqlite3_stmt* stmt;
-
-        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
-            std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
-            return false;
-        }
-
-        sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, surname.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 3, phone_num.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 4, passport_id.c_str(), -1, SQLITE_TRANSIENT);
-
-        bool success = false;
-        if (sqlite3_step(stmt) == SQLITE_DONE) {
-            std::cout << "Passenger added successfully!" << std::endl;
-            success = true;
-        }
-        else {
-            int errCode = sqlite3_errcode(db);
-            if (errCode == SQLITE_CONSTRAINT) {
-                std::cerr << "Passenger with this passport ID already exists." << std::endl;
-            }
-            else {
-                std::cerr << "Error inserting passenger: " << sqlite3_errmsg(db) << std::endl;
-            }
-        }
-
-        sqlite3_finalize(stmt);
-        return success;
     }
 
     bool addCity(sqlite3* db, const std::string& name) {
@@ -354,13 +361,13 @@ public:
     }
 
     bool addRoute(sqlite3* db,
-              const std::string& departure_time,
-              const std::string& arrival_time,
-              int departure_station_id,
-              int arrival_station_id,
-              int platform_id) {
+        const std::string& departure_time,
+        const std::string& arrival_time,
+        int departure_station_id,
+        int arrival_station_id,
+        int platform_id) {
         const char* sql = "INSERT INTO routes (departure_time, arrival_time, departure_station_id, arrival_station_id, platform_id) "
-                          "VALUES (?, ?, ?, ?, ?);";
+            "VALUES (?, ?, ?, ?, ?);";
         sqlite3_stmt* stmt;
 
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {

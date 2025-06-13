@@ -6,6 +6,7 @@
 #include <windows.h>
 #include <ctime>
 #include <thread>
+#include <conio.h>
 
 void enableANSI() {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -32,6 +33,12 @@ std::string getCurrentDateTime() {
     char buf[20];
     std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
     return std::string(buf);
+}
+
+void pressAnyKeyToContinue() {
+    std::cout << "Press any key to continue...";
+    _getch();
+    std::cout << std::endl;
 }
 
 #endif //FUNCTIONS_H

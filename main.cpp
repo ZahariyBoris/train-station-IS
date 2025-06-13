@@ -17,6 +17,9 @@ int main() {
     }
     // manager.dropTables(db);
     manager.createTables(db);
+    std::cout << std::endl;
+    manager.deleteExpiredTickets(db);
+    std::cout << std::endl;
     sleepAndClear(999);
 
     char choice;
@@ -24,6 +27,7 @@ int main() {
     std::string role, password;
 
     while (isRunning) {
+        clearScreen();
         manager.drawLoginMenu();
         std::cin >> choice;
 
@@ -39,7 +43,7 @@ int main() {
                 std::cout << "Login successful!" << std::endl;
                 sleepAndClear(700);
 
-                if (role == "admin") {
+                if (role == "admin" || role == "Admin") {
                     bool inAdminMenu = true;
                     while (inAdminMenu) {
                         manager.drawAdminMenu();
@@ -86,9 +90,9 @@ int main() {
                             clearScreen();
                             std::string departure_time, arrival_time;
                             int departure_station_id, arrival_station_id, platform_id;
-                            std::cout << "Enter departure time: ";
+                            std::cout << "Enter departure time: (YYYY-MM-DD HH:MM:SS)";
                             std::cin >> departure_time;
-                            std::cout << "Enter arrival time: ";
+                            std::cout << "Enter arrival time: (YYYY-MM-DD HH:MM:SS)";
                             std::cin >> arrival_time;
                             std::cout << "Enter departure station ID: ";
                             std::cin >> departure_station_id;
@@ -133,7 +137,7 @@ int main() {
                         }
                     }
                 }
-                else if (role == "cashier") {
+                else if (role == "cashier" || role == "Cashier") {
                     bool inCashierMenu = true;
                     while (inCashierMenu) {
                         manager.drawCashierMenu();
@@ -153,7 +157,7 @@ int main() {
                             std::cout << "Enter passenger's phone number: ";
                             std::cin >> phone_num;
                             Passenger p(name, surname, phone_num, passport_id);
-                            p.save(db);
+                            p.savePassenger(db);
                             break;
                         }
 
@@ -172,7 +176,37 @@ int main() {
                             std::cout << "Enter seat ID: ";
                             std::cin >> seat;
                             std::cout << "Enter ticket price: ";
-                            manager.purchaseTicket(db, p_id, tr_id, carriage_id, seat, price, date);
+                            std::cin >> price;
+
+                            Ticket t(p_id, tr_id, carriage_id, seat, price, date);
+                            t.saveTicket(db);
+                            break;
+                        }
+
+                        case '3': {
+                            clearScreen();
+                            int p_id;
+                            std::cout << "Enter passenger's ID: ";
+                            std::cin >> p_id;
+                            manager.cancelTicket(db, p_id);
+                            break;
+                        }
+
+                        case '4': {
+                            clearScreen();
+                            std::cout << "<====[ PASSENGERS ]===>" << std::endl;
+                            manager.showAllPassengers(db);
+                            pressAnyKeyToContinue();
+                            clearScreen();
+                            break;
+                        }
+
+                        case '5': {
+                            clearScreen();
+                            std::cout << "<====[ TICKETS ]===>" << std::endl;
+                            manager.showAllTickets(db);
+                            pressAnyKeyToContinue();
+                            clearScreen();
                             break;
                         }
 
@@ -189,12 +223,14 @@ int main() {
             }
             else {
                 std::cout << "Login failed! Try again!" << std::endl;
+                sleepAndClear(700);
             }
             break;
 
         case 'q':
             sleepAndClear(500);
             std::cout << "Quitting..." << std::endl;
+            sleepAndClear(500);
             isRunning = false;
             break;
 

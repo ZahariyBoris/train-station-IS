@@ -11,11 +11,12 @@ int main() {
 
     sqlite3* db;
     DatabaseManager manager;
+
     if (sqlite3_open("railway_system.db", &db) != SQLITE_OK) {
         std::cerr << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
         return 1;
     }
-    // manager.dropTables(db);
+
     manager.createTables(db);
     std::cout << std::endl;
     manager.deleteExpiredTickets(db);
@@ -43,7 +44,7 @@ int main() {
                 std::cout << "Login successful!" << std::endl;
                 sleepAndClear(700);
 
-                if (role == "admin" || role == "Admin") {
+                if (role == "admin") {
                     bool inAdminMenu = true;
                     while (inAdminMenu) {
                         manager.drawAdminMenu();
@@ -53,78 +54,118 @@ int main() {
                         switch (adminChoice) {
                             case '1': {
                             clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                             std::string name;
-                            std::cout << "Enter city name: ";
-                            std::cin >> name;
+                            if (!safeInput(name, "Enter city name: ")) break;
                             manager.addCity(db, name);
                             break;
                         }
 
                         case '2': {
                             clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                             std::string name;
                             int city_id;
-                            std::cout << "Enter station name: ";
-                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                            std::getline(std::cin, name);
-                            std::cout << "Enter city ID: ";
-                            std::cin >> city_id;
+                            if (!safeStringInput(name, "Enter station name: ")) break;
+                            if (!safeInput(city_id, "Enter city ID: ")) break;
                             manager.addStation(db, name, city_id);
                             break;
                         }
 
                         case '3': {
                             clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                             std::string name;
                             int station_id;
-                            std::cout << "Enter platform name: ";
-                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                            std::getline(std::cin, name);
-                            std::cout << "Enter station ID: ";
-                            std::cin >> station_id;
+                            if (!safeStringInput(name, "Enter platform name: ")) break;
+                            if (!safeInput(station_id, "Enter station ID: ")) break;
                             manager.addPlatform(db, name, station_id);
                             break;
                         }
 
                         case '4': {
                             clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                             std::string departure_time, arrival_time;
                             int departure_station_id, arrival_station_id, platform_id;
-                            std::cout << "Enter departure time: (YYYY-MM-DD HH:MM:SS)";
-                            std::cin >> departure_time;
-                            std::cout << "Enter arrival time: (YYYY-MM-DD HH:MM:SS)";
-                            std::cin >> arrival_time;
-                            std::cout << "Enter departure station ID: ";
-                            std::cin >> departure_station_id;
-                            std::cout << "Enter arrival station ID: ";
-                            std::cin >> arrival_station_id;
-                            std::cout << "Enter platform ID: ";
-                            std::cin >> platform_id;
-                            manager.addRoute(db, departure_time, arrival_time, departure_station_id, arrival_station_id, platform_id);
+                            if (!safeDateTimeInput(departure_time, "Enter departure time (YYYY-MM-DD HH:MM:SS): ")) break;
+                            if (!safeDateTimeInput(arrival_time, "Enter arrival time (YYYY-MM-DD HH:MM:SS): ")) break;
+                            if (!safeInput(departure_station_id, "Enter departure station ID: ")) break;
+                            if (!safeInput(arrival_station_id, "Enter arrival station ID: ")) break;
+                            if (!safeInput(platform_id, "Enter platform ID: ")) break;
+                            if (!manager.stationExists(db, departure_station_id)) {
+                                std::cerr << "Departure station ID does not exist." << std::endl;
+                                break;
+                            }
+                            if (!manager.stationExists(db, arrival_station_id)) {
+                                std::cerr << "Arrival station ID does not exist." << std::endl;
+                                break;
+                            }
+                            if (!manager.platformBelongsToStation(db, platform_id, departure_station_id)) {
+                                std::cerr << "Platform does not belong to the departure station." << std::endl;
+                                break;
+                            }
+                            Route r(departure_time, arrival_time, departure_station_id, arrival_station_id, platform_id);
+                            r.saveRoute(db);
                             break;
                         }
 
                         case '5': {
                             clearScreen();
-                            std::string model;
-                            int route_id;
-                            std::cout << "Enter model name: ";
                             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                            std::getline(std::cin, model);
-                            std::cout << "Enter route ID: ";
-                            std::cin >> route_id;
-                            manager.addTrain(db, model, route_id);
+                            int id;
+                            if (!safeInput(id), "Enter route ID: ") break;
+                            manager.deleteRoute(db, id);
                             break;
                         }
 
                         case '6': {
+                            clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            std::cout << "<====[ ROUTES ]===>" << std::endl;
+                            manager.showAllRoutes(db);
+                            pressAnyKeyToContinue();
+                            clearScreen();
+                            break;
+                        }
+
+                        case '7': {
+                            clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            std::string model;
+                            int route_id;
+                            if (!safeStringInput(model, "Enter model name: ")) break;
+                            if (!safeInput(route_id, "Enter route ID: ")) break;
+                            manager.addTrain(db, model, route_id);
+                            break;
+                        }
+
+                        case '8': {
+                            clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                             int train_id, seat_count;
-                            std::cout << "Enter train ID: ";
-                            std::cin >> train_id;
-                            std::cout << "Enter seat count: ";
-                            std::cin >> seat_count;
+                            if (!safeInput(train_id, "Enter train ID: ")) break;
+                            if (!safeInput(seat_count, "Enter seat count: ")) break;
                             manager.addCarriage(db, train_id, seat_count);
                             break;
+                        }
+
+                        case 'd': {
+                            clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            bool choice_del;
+                            manager.dropWarning();
+                            std::cin >> choice_del;
+                            if (choice_del == 1) {
+                                manager.dropTables(db);
+                                sleepAndClear(500);
+                                break;
+                            }
+                            else {
+                                std::cout << "Table deleting has been canceled!" << std::endl;
+                                sleepAndClear(500);
+                                break;
+                            }
                         }
 
                         case 'q':
@@ -137,7 +178,7 @@ int main() {
                         }
                     }
                 }
-                else if (role == "cashier" || role == "Cashier") {
+                else if (role == "cashier") {
                     bool inCashierMenu = true;
                     while (inCashierMenu) {
                         manager.drawCashierMenu();
@@ -147,15 +188,12 @@ int main() {
                         switch (cashierChoice) {
                         case '1': {
                             clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                             std::string name, surname, passport_id, phone_num;
-                            std::cout << "Enter passenger's name: ";
-                            std::cin >> name;
-                            std::cout << "Enter passenger's surname: ";
-                            std::cin >> surname;
-                            std::cout << "Enter passenger's passport ID: ";
-                            std::cin >> passport_id;
-                            std::cout << "Enter passenger's phone number: ";
-                            std::cin >> phone_num;
+                            if (!safeStringInput(name, "Enter passenger's name: ")) break;
+                            if (!safeStringInput(surname, "Enter passenger's surname: ")) break;
+                            if (!safeStringInput(passport_id, "Enter passenger's passport ID: ")) break;
+                            if (!safeStringInput(phone_num, "Enter passenger's phone number: ")) break;
                             Passenger p(name, surname, phone_num, passport_id);
                             p.savePassenger(db);
                             break;
@@ -163,20 +201,16 @@ int main() {
 
                         case '2': {
                             clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                             int p_id, tr_id, carriage_id, seat;
                             double price;
                             std::string date = getCurrentDateTime();
 
-                            std::cout << "Enter passenger's ID: ";
-                            std::cin >> p_id;
-                            std::cout << "Enter train ID: ";
-                            std::cin >> tr_id;
-                            std::cout << "Enter carriage ID: ";
-                            std::cin >> carriage_id;
-                            std::cout << "Enter seat ID: ";
-                            std::cin >> seat;
-                            std::cout << "Enter ticket price: ";
-                            std::cin >> price;
+                            if (!safeInput(p_id, "Enter passenger's ID: ")) break;
+                            if (!safeInput(tr_id, "Enter train ID: ")) break;
+                            if (!safeInput(carriage_id, "Enter carriage ID: ")) break;
+                            if (!safeInput(seat, "Enter seat ID: ")) break;
+                            if (!safeInput(price, "Enter ticket price: ")) break;
 
                             Ticket t(p_id, tr_id, carriage_id, seat, price, date);
                             t.saveTicket(db);
@@ -185,15 +219,16 @@ int main() {
 
                         case '3': {
                             clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                             int p_id;
-                            std::cout << "Enter passenger's ID: ";
-                            std::cin >> p_id;
+                            if (!safeInput(p_id, "Enter passenger's ID: ")) break;
                             manager.cancelTicket(db, p_id);
                             break;
                         }
 
                         case '4': {
                             clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                             std::cout << "<====[ PASSENGERS ]===>" << std::endl;
                             manager.showAllPassengers(db);
                             pressAnyKeyToContinue();
@@ -205,6 +240,38 @@ int main() {
                             clearScreen();
                             std::cout << "<====[ TICKETS ]===>" << std::endl;
                             manager.showAllTickets(db);
+                            pressAnyKeyToContinue();
+                            clearScreen();
+                            break;
+                        }
+
+                        case '6': {
+                            clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            std::cout << "<====[ ROUTES ]===>" << std::endl;
+                            manager.showAllRoutes(db);
+                            pressAnyKeyToContinue();
+                            clearScreen();
+                            break;
+                        }
+
+                        case '7': {
+                            clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            std::string surname;
+                            if (!safeStringInput(surname, "Enter passenger's surname: ")) break;
+                            manager.searchPassengerBySurname(db, surname);
+                            pressAnyKeyToContinue();
+                            clearScreen();
+                            break;
+                        }
+
+                        case '8': {
+                            clearScreen();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            std::string surname;
+                            if (!safeStringInput(surname, "Enter passenger's surname: ")) break;
+                            manager.searchTicketByPassengerSurname(db, surname);
                             pressAnyKeyToContinue();
                             clearScreen();
                             break;

@@ -111,57 +111,113 @@ public:
     }
 };
 
+class Route {
+public:
+    std::string departure_t;
+    std::string arrival_t;
+    int departure_st;
+    int arrival_st;
+    int platform;
+
+    Route() {}
+    Route(const std::string& d_t,
+        const std::string& a_t,
+        const int& d_st,
+        const int& a_st,
+        const int& p)
+        : departure_t(d_t), arrival_t(a_t), departure_st(d_st), arrival_st(a_st), platform(p) {
+    }
+
+    bool saveRoute(sqlite3* db) const {
+        sqlite3_stmt* stmt = nullptr;
+        const char* sql = "INSERT INTO routes (departure_time, arrival_time, departure_station_id, arrival_station_id, platform_id) "
+            "VALUES (?, ?, ?, ?, ?);";
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+            std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, departure_t.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, arrival_t.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 3, departure_st);
+        sqlite3_bind_int(stmt, 4, arrival_st);
+        sqlite3_bind_int(stmt, 5, platform);
+
+        bool success = false;
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            std::cout << "Route added successfully!" << std::endl;
+            success = true;
+        }
+        else {
+            std::cerr << "Error inserting route: " << sqlite3_errmsg(db) << std::endl;
+        }
+
+        sqlite3_finalize(stmt);
+        return success;
+    }
+};
+
 class InterfaceRender {
 public:
     void drawLoginMenu() {
-        std::cout << "-------------------------" << std::endl;
+        std::cout << "+-----------------------+" << std::endl;
         std::cout << "| WELCOME TO THE SYSTEM |" << std::endl;
-        std::cout << "------------------------- \n"
-                  << "| 1 - Login \n"
-                  << "| q - QUIT \n"
+        std::cout << "+-----------------------+" << std::endl
+                  << "| 1 - Login;" << std::endl
+                  << "| q - QUIT;" << std::endl
                   << "| Enter your choice from the menu: ";
     }
 
     void drawAdminMenu() {
-        std::cout << "--------------------------" << std::endl;
+        std::cout << "+------------------------+" << std::endl;
         std::cout << "| Choose action:" << std::endl;
         std::cout << "| 1 - Add city;" << std::endl;
         std::cout << "| 2 - Add station;" << std::endl;
         std::cout << "| 3 - Add platform;" << std::endl;
+        std::cout << std::endl;
         std::cout << "| 4 - Add route;" << std::endl;
-        std::cout << "| 5 - Add train" << std::endl;
-        std::cout << "| 6 - Add carriage" << std::endl;
+        std::cout << "| 5 - Delete route;" << std::endl;
+        std::cout << "| 6 - Show all routes;" << std::endl;
+        std::cout << std::endl;
+        std::cout << "| 7 - Add train;" << std::endl;
+        std::cout << "| 8 - Add carriage;" << std::endl;
         std::cout << "|" << std::endl;
-        std::cout << "| q - QUIT" << std::endl;
-        std::cout << "--------------------------" << std::endl;
+        std::cout << "| d - DELETE ALL DATA;" << std::endl;
+        std::cout << "| q - QUIT;" << std::endl;
+        std::cout << "+------------------------+" << std::endl;
         std::cout << "Enter your choice from the menu: ";
     }
 
     void drawCashierMenu() {
-        std::cout << "--------------------------" << std::endl;
+        std::cout << "+------------------------+" << std::endl;
         std::cout << "| Choose action:" << std::endl;
         std::cout << "| 1 - Add passenger;" << std::endl;
         std::cout << "| 2 - Buy ticket;" << std::endl;
-        std::cout << "| 3 - Cancel ticket" << std::endl;
+        std::cout << "| 3 - Cancel ticket;" << std::endl;
         std::cout << "|" << std::endl;
         std::cout << "| 4 - Show all passengers;" << std::endl;
         std::cout << "| 5 - Show all tickets;" << std::endl;
-        std::cout << "| q - QUIT" << std::endl;
-        std::cout << "--------------------------" << std::endl;
+        std::cout << "| 6 - Show all routes;" << std::endl;
+        std::cout << "|" << std::endl;
+        std::cout << "| 7 - Search passenger;" << std::endl;
+        std::cout << "| 8 - Search ticket;" << std::endl;
+        std::cout << "| q - QUIT;" << std::endl;
+        std::cout << "+------------------------+" << std::endl;
         std::cout << "Enter your choice from the menu: ";
     }
 
     void printPassenger(const Passenger& p) const {
-        std::cout << "-----------------------------------------------------------" << std::endl;
+        std::cout << "+---------------------------------------------------------+" << std::endl;
         std::cout << "| Passenger name: " << p.name << std::endl;
         std::cout << "| Passenger surname: " << p.surname << std::endl;
         std::cout << "| Passenger phone number: " << p.phone << std::endl;
         std::cout << "| Passenger passport ID: " << p.passportId << std::endl;
-        std::cout << "-----------------------------------------------------------" << std::endl;
+        std::cout << "+---------------------------------------------------------+" << std::endl;
     }
 
     void printTicket(const Ticket& t, const Passenger& p) const {
-        std::cout << "-----------------------------------------------------------" << std::endl;
+        std::cout << "+-------------------------------------------------------------+" << std::endl;
         std::cout << "| Passenger ID: " << t.passenger_id << std::endl;
         std::cout << "| Passenger name: " << p.name << std::endl;
         std::cout << "| Passenger surname: " << p.surname << std::endl;
@@ -170,7 +226,29 @@ public:
         std::cout << "| Seat number: " << t.seat_number << std::endl;
         std::cout << "| Ticket price: " << t.price << std::endl;
         std::cout << "| Purchase date: " << t.purchase_date << std::endl;
-        std::cout << "---------------------------------------------------------------" << std::endl;
+        std::cout << "+-------------------------------------------------------------+" << std::endl;
+    }
+
+    void printRoute(const Route& r) const {
+        std::cout << "+-------------------------------------------------------------+" << std::endl;
+        std::cout << "| Departure station: " << r.departure_st << std::endl;
+        std::cout << "| Arrival station: " << r.arrival_st << std::endl;
+        std::cout << "| Platform: " << r.platform << std::endl;
+        std::cout << "| Departure time: " << r.departure_t << std::endl;
+        std::cout << "| Arrival time: " << r.arrival_t << std::endl;
+        std::cout << "+-------------------------------------------------------------+" << std::endl;
+    }
+
+    void dropWarning() {
+        std::cout << "+--------------------------------------------------------+" << std::endl
+                  << "|                   !!! WARNING !!!                      |" << std::endl
+                  << "+--------------------------------------------------------+" << std::endl
+                  << "| IF YOU PROCEED, ALL DATA FROM DATABASE WILL BE DELETED |" << std::endl
+                  << "+--------------------------------------------------------+" << std::endl
+                  << "|                               |                        |" << std::endl
+                  << "|    0 - Cancel (RECOMMENDED)   |      1 - Delete        |" << std::endl
+                  << "|                               |                        |" << std::endl
+                  << "+--------------------------------------------------------+" << std::endl;
     }
 };
 
@@ -398,7 +476,7 @@ public:
     }
 
     bool addPlatform(sqlite3* db, const std::string& name, int station_id) {
-        const char* sql = "INSERT INTO trains (name, station_id) VALUES (?, ?);";
+        const char* sql = "INSERT INTO platforms (name, station_id) VALUES (?, ?);";
         sqlite3_stmt* stmt;
 
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -422,14 +500,8 @@ public:
         return success;
     }
 
-    bool addRoute(sqlite3* db,
-        const std::string& departure_time,
-        const std::string& arrival_time,
-        int departure_station_id,
-        int arrival_station_id,
-        int platform_id) {
-        const char* sql = "INSERT INTO routes (departure_time, arrival_time, departure_station_id, arrival_station_id, platform_id) "
-            "VALUES (?, ?, ?, ?, ?);";
+    bool deleteRoute(sqlite3* db, int id) {
+        const char* sql = "DELETE FROM route WHERE id = ?;";
         sqlite3_stmt* stmt;
 
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -437,23 +509,21 @@ public:
             return false;
         }
 
-        sqlite3_bind_text(stmt, 1, departure_time.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, arrival_time.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int(stmt, 3, departure_station_id);
-        sqlite3_bind_int(stmt, 4, arrival_station_id);
-        sqlite3_bind_int(stmt, 5, platform_id);
-
-        bool success = false;
-        if (sqlite3_step(stmt) == SQLITE_DONE) {
-            std::cout << "Route added successfully!" << std::endl;
-            success = true;
+        if (sqlite3_bind_int(stmt, 1, id) != SQLITE_OK) {
+            std::cerr << "Failed to bind ID: " << sqlite3_errmsg(db) << std::endl;
+            sqlite3_finalize(stmt);
+            return false;
         }
-        else {
-            std::cerr << "Error inserting route: " << sqlite3_errmsg(db) << std::endl;
+
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            std::cerr << "Failed to delete route: " << sqlite3_errmsg(db) << std::endl;
+            sqlite3_finalize(stmt);
+            return false;
         }
 
         sqlite3_finalize(stmt);
-        return success;
+        std::cout << "Route deleted successfully.\n";
+        return true;
     }
 
     bool addCarriage(sqlite3* db, int train_id, int seat_count) {
@@ -586,6 +656,136 @@ public:
         }
 
         sqlite3_finalize(stmt);
+    }
+
+    void showAllRoutes(sqlite3* db) {
+        const char* sql = "SELECT * FROM routes;";
+        sqlite3_stmt* stmt;
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                Route r;
+                r.departure_t = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+                r.arrival_t = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+                r.departure_st = sqlite3_column_int(stmt, 3);
+                r.arrival_st = sqlite3_column_int(stmt, 4);
+                r.platform = sqlite3_column_int(stmt, 5);
+
+                InterfaceRender renderer;
+                renderer.printRoute(r);
+            }
+            sqlite3_finalize(stmt);
+        } else {
+            std::cerr << "Unable to retrieve routes: " << sqlite3_errmsg(db) << "\n";
+        }
+    }
+
+    void searchPassengerBySurname(sqlite3* db, const std::string& targetSurname) {
+        const char* sql = "SELECT name, surname, phone_num, passport_id FROM passengers WHERE surname = ?;";
+        sqlite3_stmt* stmt;
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, targetSurname.c_str(), -1, SQLITE_TRANSIENT);
+
+            bool found = false;
+            InterfaceRender render;
+
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                Passenger p(
+                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)),
+                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
+                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
+                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
+                );
+                render.printPassenger(p);
+                found = true;
+            }
+
+            if (!found) {
+                std::cout << "No passengers found with surname: " << targetSurname << "\n";
+            }
+
+            sqlite3_finalize(stmt);
+        }
+        else {
+            std::cerr << "Search failed: " << sqlite3_errmsg(db) << "\n";
+        }
+    }
+
+    void searchTicketByPassengerSurname(sqlite3* db, const std::string& surname) {
+        const char* sql =
+            "SELECT t.passenger_id, t.train_id, t.carriage_id, t.seat_number, t.price, t.purchase_date, "
+            "p.name, p.surname "
+            "FROM tickets t "
+            "JOIN passengers p ON t.passenger_id = p.id "
+            "WHERE p.surname = ?;";
+
+        sqlite3_stmt* stmt;
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, surname.c_str(), -1, SQLITE_TRANSIENT);
+
+            bool found = false;
+            InterfaceRender render;
+
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                Ticket t;
+                Passenger p;
+
+                t.passenger_id = sqlite3_column_int(stmt, 0);
+                t.train_id = sqlite3_column_int(stmt, 1);
+                t.carriage_id = sqlite3_column_int(stmt, 2);
+                t.seat_number = sqlite3_column_int(stmt, 3);
+                t.price = sqlite3_column_double(stmt, 4);
+                t.purchase_date = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+
+                p.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+                p.surname = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
+
+                render.printTicket(t, p);
+                found = true;
+            }
+
+            if (!found) {
+                std::cout << "No tickets found for passenger with surname: " << surname << "\n";
+            }
+
+            sqlite3_finalize(stmt);
+        }
+        else {
+            std::cerr << "Failed to search tickets: " << sqlite3_errmsg(db) << "\n";
+        }
+    }
+
+    bool stationExists(sqlite3* db, int station_id) {
+        const char* sql = "SELECT COUNT(*) FROM stations WHERE id = ?";
+        sqlite3_stmt* stmt;
+        bool exists = false;
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int(stmt, 1, station_id);
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                exists = sqlite3_column_int(stmt, 0) > 0;
+            }
+            sqlite3_finalize(stmt);
+        }
+        return exists;
+    }
+
+    bool platformBelongsToStation(sqlite3* db, int platform_id, int station_id) {
+        const char* sql = "SELECT COUNT(*) FROM platforms WHERE id = ? AND station_id = ?";
+        sqlite3_stmt* stmt;
+        bool valid = false;
+
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int(stmt, 1, platform_id);
+            sqlite3_bind_int(stmt, 2, station_id);
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                valid = sqlite3_column_int(stmt, 0) > 0;
+            }
+            sqlite3_finalize(stmt);
+        }
+        return valid;
     }
 };
 

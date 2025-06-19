@@ -221,7 +221,7 @@ int main() {
                             clearScreen();
                             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                             int p_id;
-                            if (!safeInput(p_id, "Enter passenger's ID: ")) break;
+                            if (!safeInput(p_id, "Enter ticket ID: ")) break;
                             manager.cancelTicket(db, p_id);
                             break;
                         }

@@ -6,6 +6,7 @@
 
 class Ticket {
 public:
+    int id;
     int passenger_id;
     int train_id;
     int carriage_id;
@@ -23,7 +24,7 @@ public:
         : passenger_id(p_id), train_id(t_id), carriage_id(c_id), seat_number(s), price(p), purchase_date(d) {
     }
 
-    bool saveTicket(sqlite3* db) const {
+    bool saveTicket(sqlite3* db) {
         const char* sql = "INSERT INTO tickets (passenger_id, train_id, carriage_id, seat_number, price, purchase_date) VALUES (?, ?, ?, ?, ?, ?);";
         sqlite3_stmt* stmt;
 
@@ -57,7 +58,8 @@ public:
 
         bool success = false;
         if (sqlite3_step(stmt) == SQLITE_DONE) {
-            std::cout << "Ticket purchased!" << std::endl;
+            id = static_cast<int>(sqlite3_last_insert_rowid(db));
+            std::cout << "Ticket purchased! Ticket ID: " << id << std::endl;
             success = true;
         }
         else {
@@ -118,6 +120,10 @@ public:
     int departure_st;
     int arrival_st;
     int platform;
+
+    std::string departure_station_name;
+    std::string arrival_station_name;
+    std::string platform_name;
 
     Route() {}
     Route(const std::string& d_t,
@@ -207,8 +213,9 @@ public:
         std::cout << "Enter your choice from the menu: ";
     }
 
-    void printPassenger(const Passenger& p) const {
+    void printPassenger(const Passenger& p, const Ticket& t) const {
         std::cout << "+---------------------------------------------------------+" << std::endl;
+        std::cout << "| Passenger ID: " << t.passenger_id << std::endl;
         std::cout << "| Passenger name: " << p.name << std::endl;
         std::cout << "| Passenger surname: " << p.surname << std::endl;
         std::cout << "| Passenger phone number: " << p.phone << std::endl;
@@ -218,6 +225,7 @@ public:
 
     void printTicket(const Ticket& t, const Passenger& p) const {
         std::cout << "+-------------------------------------------------------------+" << std::endl;
+        std::cout << "| Ticket ID: " << t.id << std::endl;
         std::cout << "| Passenger ID: " << t.passenger_id << std::endl;
         std::cout << "| Passenger name: " << p.name << std::endl;
         std::cout << "| Passenger surname: " << p.surname << std::endl;
@@ -231,9 +239,9 @@ public:
 
     void printRoute(const Route& r) const {
         std::cout << "+-------------------------------------------------------------+" << std::endl;
-        std::cout << "| Departure station: " << r.departure_st << std::endl;
-        std::cout << "| Arrival station: " << r.arrival_st << std::endl;
-        std::cout << "| Platform: " << r.platform << std::endl;
+        std::cout << "| Departure station: " << r.departure_station_name << std::endl;
+        std::cout << "| Arrival station: " << r.arrival_station_name << std::endl;
+        std::cout << "| Platform: " << r.platform_name << std::endl;
         std::cout << "| Departure time: " << r.departure_t << std::endl;
         std::cout << "| Arrival time: " << r.arrival_t << std::endl;
         std::cout << "+-------------------------------------------------------------+" << std::endl;
@@ -527,7 +535,7 @@ public:
     }
 
     bool addCarriage(sqlite3* db, int train_id, int seat_count) {
-        const char* sql = "INSERT INTO carriages (train_id, seat_count) VALUES (?, ?);";
+        const char* sql = "INSERT INTO carriages (train_id, seats_count) VALUES (?, ?);";
         sqlite3_stmt* stmt;
 
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -551,8 +559,8 @@ public:
         return success;
     }
 
-    bool cancelTicket(sqlite3* db, int p_id) {
-        const char* sql = "DELETE FROM tickets WHERE passenger_id = ?;";
+    bool cancelTicket(sqlite3* db, int id) {
+        const char* sql = "DELETE FROM tickets WHERE id = ?;";
         sqlite3_stmt* stmt;
 
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -560,7 +568,7 @@ public:
             return false;
         }
 
-        sqlite3_bind_int(stmt, 1, p_id);
+        sqlite3_bind_int(stmt, 1, id);
 
         bool success = false;
         if (sqlite3_step(stmt) == SQLITE_DONE) {
@@ -613,6 +621,7 @@ public:
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
             while (sqlite3_step(stmt) == SQLITE_ROW) {
                 Ticket t;
+                t.id = sqlite3_column_int(stmt, 0);
                 t.passenger_id = sqlite3_column_int(stmt, 1);
                 t.train_id = sqlite3_column_int(stmt, 2);
                 t.carriage_id = sqlite3_column_int(stmt, 3);
@@ -629,13 +638,14 @@ public:
                 }
             }
             sqlite3_finalize(stmt);
-        } else {
+        }
+        else {
             std::cerr << "Failed to retrieve tickets: " << sqlite3_errmsg(db) << "\n";
         }
     }
 
     void showAllPassengers(sqlite3* db) {
-        const char* sql = "SELECT name, surname, phone_num, passport_id FROM passengers;";
+        const char* sql = "SELECT id, name, surname, phone_num, passport_id FROM passengers;";
         sqlite3_stmt* stmt;
 
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -647,41 +657,56 @@ public:
 
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             Passenger p(
-                reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)),
-                reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
-                reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
-                reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
+                reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)), // name
+                reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)), // surname
+                reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3)), // phone
+                reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4))  // passport_id
             );
-            render.printPassenger(p);
+            Ticket t;
+            t.passenger_id = sqlite3_column_int(stmt, 0); // id
+            render.printPassenger(p, t);
         }
 
         sqlite3_finalize(stmt);
     }
 
     void showAllRoutes(sqlite3* db) {
-        const char* sql = "SELECT * FROM routes;";
+        const char* sql = R"(
+            SELECT
+                r.departure_time,
+                r.arrival_time,
+                s1.name AS departure_station_name,
+                s2.name AS arrival_station_name,
+                p.name AS platform_name
+            FROM routes r
+            JOIN stations s1 ON r.departure_station_id = s1.id
+            JOIN stations s2 ON r.arrival_station_id = s2.id
+            JOIN platforms p ON r.platform_id = p.id;
+        )";
+
         sqlite3_stmt* stmt;
 
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
             while (sqlite3_step(stmt) == SQLITE_ROW) {
                 Route r;
-                r.departure_t = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-                r.arrival_t = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-                r.departure_st = sqlite3_column_int(stmt, 3);
-                r.arrival_st = sqlite3_column_int(stmt, 4);
-                r.platform = sqlite3_column_int(stmt, 5);
+                r.departure_t = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+                r.arrival_t = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+                r.departure_station_name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+                r.arrival_station_name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+                r.platform_name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
 
                 InterfaceRender renderer;
                 renderer.printRoute(r);
             }
             sqlite3_finalize(stmt);
-        } else {
+        }
+        else {
             std::cerr << "Unable to retrieve routes: " << sqlite3_errmsg(db) << "\n";
         }
     }
 
     void searchPassengerBySurname(sqlite3* db, const std::string& targetSurname) {
-        const char* sql = "SELECT name, surname, phone_num, passport_id FROM passengers WHERE surname = ?;";
+        const char* sql = "SELECT id, name, surname, phone_num, passport_id FROM passengers WHERE surname = ?;";
         sqlite3_stmt* stmt;
 
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
@@ -692,12 +717,14 @@ public:
 
             while (sqlite3_step(stmt) == SQLITE_ROW) {
                 Passenger p(
-                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)),
-                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
-                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
-                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
+                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)), // name
+                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)), // surname
+                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3)), // phone
+                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4))  // passport_id
                 );
-                render.printPassenger(p);
+                Ticket t;
+                t.passenger_id = sqlite3_column_int(stmt, 0); // id
+                render.printPassenger(p, t);
                 found = true;
             }
 

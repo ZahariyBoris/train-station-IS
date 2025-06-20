@@ -2,9 +2,13 @@
 #include <chrono>
 #include <string>
 #include <limits>
-#include "include/sqlite3.h"
-#include "include/classes.h"
-#include "include/functions.h"
+
+#include "db/sqlite3.h"
+#include "headers/functions.h"
+#include "headers/Ticket.h"
+#include "headers/Passenger.h"
+#include "headers/Route.h"
+#include "headers/DatabaseManager.h"
 
 int main() {
     enableANSI();
